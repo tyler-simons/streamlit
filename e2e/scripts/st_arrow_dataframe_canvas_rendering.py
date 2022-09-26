@@ -150,7 +150,6 @@ chars = ascii_uppercase + ascii_lowercase + digits  # will use it to generate st
 dft = pd.DataFrame(
     {
         "float64": np.random.rand(n_rows),
-        "int64": np.arange(random_int, random_int + n_rows),
         "numpy bool": [np.random.choice([True, False]) for _ in range(n_rows)],
         "boolean": pd.array(
             [random.choice([True, False, None]) for _ in range(n_rows)],
@@ -164,6 +163,21 @@ dft = pd.DataFrame(
         "datetime64 + TZ": [
             (pd.to_datetime("2022-03-11 17:41:00-05:00")) for _ in range(n_rows)
         ],
+        "category": pd.Series(
+            list("".join(random.choice(ascii_lowercase) for i in range(n_rows)))
+        ).astype("category"),
+        # "sparse": sparse_data # Sparse pandas data (column sparse) not supported
+        "interval": [
+            pd.Interval(left=i, right=i + 1, closed="both") for i in range(n_rows)
+        ],
+    }
+)
+
+st._arrow_dataframe(dft)
+
+st.header("String dtypes in pd.DataFrame")
+string_df = pd.DataFrame(
+    {
         "string_object": [
             "".join(random.choice(chars) for i in range(random_int))
             for j in range(n_rows)
@@ -172,17 +186,14 @@ dft = pd.DataFrame(
             "".join(random.choice(chars) for i in range(random_int))
             for j in range(n_rows)
         ],
-        "category": pd.Series(
-            list("".join(random.choice(ascii_lowercase) for i in range(n_rows)))
-        ).astype("category"),
-        "period[H]": [
-            (pd.Period("2022-03-14 11:52:00", freq="H") + pd.offsets.Hour(i))
-            for i in range(n_rows)
-        ],
-        # "sparse": sparse_data # Sparse pandas data (column sparse) not supported
-        "interval": [
-            pd.Interval(left=i, right=i + 1, closed="both") for i in range(n_rows)
-        ],
+    }
+)
+# string_string initially had the 'object' dtype. this line convert it into 'string'
+string_df = string_df.astype({"string_string": "string"})
+st._arrow_dataframe(string_df)
+
+string_list_df = pd.DataFrame(
+    {
         "string_list": [
             [
                 "".join(random.choice(chars) for _ in range(10))
@@ -192,11 +203,86 @@ dft = pd.DataFrame(
         ],
     }
 )
+st._arrow_dataframe(string_list_df)
 
-# string_string initially had the 'object' dtype. this line convert it into 'string'
-dft = dft.astype({"string_string": "string"})
+st.header("Period dtypes in pd.DataFrame")
 
-st._arrow_dataframe(dft)
+
+# When the table is too wide, it does not fit into the container, and thus it is
+# not covered in the snapshot. We divide the tables into several chunks so that
+# everything is visible and covered by snapshot.
+def split_in_chunks(target_list, chunk_size):
+    for i in range(0, len(target_list), chunk_size):
+        yield target_list[i : i + chunk_size]
+
+
+offset_types = [
+    "L",
+    "S",
+    "T",
+    "H",
+    "D",
+]
+period_df = pd.DataFrame(
+    [
+        [pd.Period("2012-02-14", freq=offset_type) for offset_type in offset_types],
+        [pd.Period("1970-01-01", freq=offset_type) for offset_type in offset_types],
+    ],
+    columns=offset_types,
+)
+st._arrow_dataframe(period_df)
+
+months_shorts = [
+    "JAN",
+    "FEB",
+    "MAR",
+    "APR",
+    "MAY",
+    "JUN",
+    "JUL",
+    "AUG",
+    "SEP",
+    "OCT",
+    "NOV",
+    "DEC",
+]
+offset_types = ["Q", *[f"Q-{d}" for d in months_shorts]]
+for current_offset_type in split_in_chunks(offset_types, 10):
+    period_quarter_df = pd.DataFrame(
+        [
+            [
+                pd.Period("2012-02-14", freq=offset_type)
+                for offset_type in current_offset_type
+            ],
+            [
+                pd.Period("1970-01-01", freq=offset_type)
+                for offset_type in current_offset_type
+            ],
+        ],
+        columns=current_offset_type,
+    )
+    st._arrow_dataframe(period_quarter_df)
+
+weekday_shorts = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
+offset_types = [
+    "W",
+    *[f"W-{d}" for d in weekday_shorts],
+]
+for current_offset_type in split_in_chunks(offset_types, 4):
+    period_week_df = pd.DataFrame(
+        [
+            [
+                pd.Period("2012-02-14", freq=offset_type)
+                for offset_type in current_offset_type
+            ],
+            [
+                pd.Period("1970-01-01", freq=offset_type)
+                for offset_type in current_offset_type
+            ],
+        ],
+        columns=current_offset_type,
+    )
+    st._arrow_dataframe(period_week_df)
 
 st.header("Numeric dtypes in pd.DataFrame")
 int_df = pd.DataFrame(
