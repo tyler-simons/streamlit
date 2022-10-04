@@ -106,13 +106,9 @@ export interface Type {
   meta?: Record<string, any> | null
 }
 
-// type IntervalData = "int64" | "uint64" | "float64" | "datetime64[ns]"
+type IntervalData = "int64" | "uint64" | "float64" | "datetime64[ns]"
 type IntervalClosed = "left" | "right" | "both" | "neither"
-// type IntervalType = `interval[${IntervalData}, ${IntervalClosed}]`
-
-// Our current Typescript version (3.9.5) doesn't support template literal types,
-// so we have to use string literals for now.
-type IntervalType = string
+type IntervalType = `interval[${IntervalData}, ${IntervalClosed}]`
 
 // The frequency strings defined in pandas.
 // See: https://pandas.pydata.org/docs/user_guide/timeseries.html#dateoffset-objects
@@ -150,13 +146,8 @@ type PandasOffsetType =
   | "L"
   | "U"
   | "N"
-// type PeriodFrequency = PandasOffsetType | `${PandasOffsets}-${string}`
-// type PeriodType = `period[${PeriodFrequency}]`
-
-// Our current Typescript version (3.9.5) doesn't support template literal types,
-// so we have to use string literals for now.
-type PeriodType = string
-type PeriodFrequency = string
+type PeriodFrequency = PandasOffsetType | `${PandasOffsetType}-${string}`
+type PeriodType = `period[${PeriodFrequency}]`
 
 const WEEKDAY_SHORT = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
 
@@ -823,7 +814,7 @@ but was expecting \`${JSON.stringify(expectedIndexTypes)}\`.
       throw new Error(`Invalid period type: ${typeName}`)
     }
     const [, freq] = match
-    return this.formatPeriod(duration, freq)
+    return this.formatPeriod(duration, freq as PeriodFrequency)
   }
 
   private static formatPeriod(
