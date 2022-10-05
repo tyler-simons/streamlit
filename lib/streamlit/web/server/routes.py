@@ -140,7 +140,18 @@ class HealthHandler(_SpecialRequestHandler):
         """
         self._callback = callback
 
-    async def get(self):
+    async def get(self, endpoint: str):
+        if not endpoint.startswith("_stcore"):
+            if "script-health-check" in endpoint:
+                LOGGER.warning(
+                    "Endpoint /script-health-check is deprecated. "
+                    "Please use /_stcore/script-health-check instead."
+                )
+            else:
+                LOGGER.warning(
+                    "Endpoint /healtz is deprecated. Please use /_stcore/health instead."
+                )
+
         ok, msg = await self._callback()
         if ok:
             self.write(msg)
@@ -186,7 +197,13 @@ ALLOWED_MESSAGE_ORIGINS = [
 
 
 class AllowedMessageOriginsHandler(_SpecialRequestHandler):
-    def get(self) -> None:
+    def get(self, endpoint: str) -> None:
+        if not endpoint.startswith("_stcore"):
+            LOGGER.warning(
+                "Endpoint /st-allowed-message-origins is deprecated. "
+                "Please use /_stcore/allowed-message-origins instead."
+            )
+
         # ALLOWED_MESSAGE_ORIGINS must be wrapped in a dictionary because Tornado
         # disallows writing lists directly into responses due to potential XSS
         # vulnerabilities.
@@ -212,7 +229,12 @@ class MessageCacheHandler(tornado.web.RequestHandler):
         if allow_cross_origin_requests():
             self.set_header("Access-Control-Allow-Origin", "*")
 
-    def get(self):
+    def get(self, subpath):
+        if not subpath == "_stcore/":
+            LOGGER.warning(
+                "Endpoint /message is deprecated. Please use /_stcore/message instead."
+            )
+
         msg_hash = self.get_argument("hash", None)
         if msg_hash is None:
             # Hash is missing! This is a malformed request.

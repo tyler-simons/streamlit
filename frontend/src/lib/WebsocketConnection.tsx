@@ -35,7 +35,7 @@ const LOG = "WebsocketConnection"
 /**
  * The path where we should ping (via HTTP) to see if the server is up.
  */
-const SERVER_PING_PATH = "healthz"
+const SERVER_PING_PATH = "_stcore/health"
 
 /**
  * The path to fetch the whitelist for accepting cross-origin messages.
@@ -45,7 +45,7 @@ const ALLOWED_ORIGINS_PATH = "st-allowed-message-origins"
 /**
  * The path of the server's websocket endpoint.
  */
-const WEBSOCKET_STREAM_PATH = "stream"
+const WEBSOCKET_STREAM_PATH = "_stcore/stream"
 
 /**
  * Wait this long between pings, in millis.

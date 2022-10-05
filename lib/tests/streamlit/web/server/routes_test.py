@@ -23,11 +23,13 @@ import tornado.web
 import tornado.websocket
 
 from streamlit import config
-from streamlit.logger import get_logger
 from streamlit.runtime.forward_msg_cache import ForwardMsgCache, populate_hash_if_needed
 from streamlit.runtime.runtime_util import serialize_forward_msg
 from streamlit.web.server.routes import ALLOWED_MESSAGE_ORIGINS
 from streamlit.web.server.server import (
+    ALLOWED_MESSAGE_ORIGIN_ENDPOINT,
+    HEALTH_ENDPOINT,
+    MESSAGE_ENDPOINT,
     AllowedMessageOriginsHandler,
     HealthHandler,
     MessageCacheHandler,
@@ -35,11 +37,9 @@ from streamlit.web.server.server import (
 )
 from tests.streamlit.message_mocks import create_dataframe_msg
 
-LOGGER = get_logger(__name__)
-
 
 class HealthHandlerTest(tornado.testing.AsyncHTTPTestCase):
-    """Tests the /healthz endpoint"""
+    """Tests the _stcore/health endpoint"""
 
     def setUp(self):
         super(HealthHandlerTest, self).setUp()
@@ -50,38 +50,48 @@ class HealthHandlerTest(tornado.testing.AsyncHTTPTestCase):
 
     def get_app(self):
         return tornado.web.Application(
-            [(r"/healthz", HealthHandler, dict(callback=self.is_healthy))]
+            [(rf"/{HEALTH_ENDPOINT}", HealthHandler, dict(callback=self.is_healthy))]
         )
 
-    def test_healthz(self):
-        response = self.fetch("/healthz")
+    def test_health(self):
+        response = self.fetch("/_stcore/health")
         self.assertEqual(200, response.code)
         self.assertEqual(b"ok", response.body)
 
         self._is_healthy = False
-        response = self.fetch("/healthz")
+        response = self.fetch("/_stcore/health")
         self.assertEqual(503, response.code)
 
-    def test_healthz_without_csrf(self):
+    def test_health_without_csrf(self):
         config._set_option("server.enableXsrfProtection", False, "test")
-        response = self.fetch("/healthz")
+        response = self.fetch("/_stcore/health")
         self.assertEqual(200, response.code)
         self.assertEqual(b"ok", response.body)
         self.assertNotIn("Set-Cookie", response.headers)
 
-    def test_healthz_with_csrf(self):
+    def test_health_with_csrf(self):
         config._set_option("server.enableXsrfProtection", True, "test")
-        response = self.fetch("/healthz")
+        response = self.fetch("/_stcore/health")
         self.assertEqual(200, response.code)
         self.assertEqual(b"ok", response.body)
         self.assertIn("Set-Cookie", response.headers)
+
+    def test_health_deprecated(self):
+        config._set_option("server.enableXsrfProtection", False, "test")
+
+        with self.assertLogs("streamlit.web.server.routes") as logs:
+            self.fetch("/healthz")
+        self.assertEqual(
+            logs.records[0].getMessage(),
+            "Endpoint /healtz is deprecated. Please use /_stcore/health instead.",
+        )
 
 
 class MessageCacheHandlerTest(tornado.testing.AsyncHTTPTestCase):
     def get_app(self):
         self._cache = ForwardMsgCache()
         return tornado.web.Application(
-            [(r"/message", MessageCacheHandler, dict(cache=self._cache))]
+            [(rf"/{MESSAGE_ENDPOINT}", MessageCacheHandler, dict(cache=self._cache))]
         )
 
     def test_message_cache(self):
@@ -91,13 +101,28 @@ class MessageCacheHandlerTest(tornado.testing.AsyncHTTPTestCase):
         self._cache.add_message(msg, MagicMock(), 0)
 
         # Cache hit
-        response = self.fetch("/message?hash=%s" % msg_hash)
+        response = self.fetch("/_stcore/message?hash=%s" % msg_hash)
         self.assertEqual(200, response.code)
         self.assertEqual(serialize_forward_msg(msg), response.body)
 
         # Cache misses
-        self.assertEqual(404, self.fetch("/message").code)
-        self.assertEqual(404, self.fetch("/message?id=non_existent").code)
+        self.assertEqual(404, self.fetch("/_stcore/message").code)
+        self.assertEqual(404, self.fetch("/_stcore/message?id=non_existent").code)
+
+    def test_message_deprecated(self):
+        # Create a new ForwardMsg and cache it
+        msg = create_dataframe_msg([1, 2, 3])
+        msg_hash = populate_hash_if_needed(msg)
+        self._cache.add_message(msg, MagicMock(), 0)
+
+        # Cache hit
+        with self.assertLogs("streamlit.web.server.routes") as logs:
+            self.fetch("/message?hash=%s" % msg_hash)
+
+        self.assertEqual(
+            logs.records[0].getMessage(),
+            "Endpoint /message is deprecated. Please use /_stcore/message instead.",
+        )
 
 
 class StaticFileHandlerTest(tornado.testing.AsyncHTTPTestCase):
@@ -160,15 +185,25 @@ class AllowedMessageOriginsHandlerTest(tornado.testing.AsyncHTTPTestCase):
         return tornado.web.Application(
             [
                 (
-                    r"/st-allowed-message-origins",
+                    rf"/{ALLOWED_MESSAGE_ORIGIN_ENDPOINT}",
                     AllowedMessageOriginsHandler,
                 )
             ]
         )
 
     def test_allowed_message_origins(self):
-        response = self.fetch("/st-allowed-message-origins")
+        response = self.fetch("/_stcore/allowed-message-origins")
         self.assertEqual(200, response.code)
         self.assertEqual(
             {"allowedOrigins": ALLOWED_MESSAGE_ORIGINS}, json.loads(response.body)
+        )
+
+    def test_allowed_message_origins_deprecated(self):
+        with self.assertLogs("streamlit.web.server.routes") as logs:
+            response = self.fetch("/st-allowed-message-origins")
+            self.assertEqual(200, response.code)
+
+        self.assertEqual(
+            logs.records[0].getMessage(),
+            "Endpoint /st-allowed-message-origins is deprecated. Please use /_stcore/allowed-message-origins instead.",
         )
