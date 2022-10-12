@@ -17,6 +17,9 @@
 describe("st.map", () => {
   before(() => {
     cy.loadApp("http://localhost:3000/");
+
+    // Wait until maps no longer loading
+    cy.get('.stAlert', { timeout: 10000 }).should('not.exist');
   });
 
   it("displays 3 maps", () => {
