@@ -20,6 +20,9 @@ describe("st.camera_input", () => {
       preserve: ["_xsrf"]
     });
     cy.loadApp("http://localhost:3000/");
+
+    // Wait until camera inputs are no longer loading
+    cy.get('.stAlert', { timeout: 10000 }).should('not.exist');
   });
 
   it("displays correct number of elements", () => {
