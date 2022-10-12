@@ -18,10 +18,10 @@ describe("st.graphviz_chart", () => {
   before(() => {
     cy.loadApp("http://localhost:3000/");
 
+    cy.prepForElementSnapshots();
+
     // Wait until charts are no longer loading
     cy.get('.stAlert', { timeout: 10000 }).should('not.exist');
-
-    cy.prepForElementSnapshots();
   });
 
   beforeEach(() => {
