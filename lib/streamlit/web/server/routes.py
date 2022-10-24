@@ -143,12 +143,12 @@ class HealthHandler(_SpecialRequestHandler):
     async def get(self, endpoint: str):
         if not endpoint.startswith("_stcore"):
             if "script-health-check" in endpoint:
-                LOGGER.warning(
+                _LOGGER.warning(
                     "Endpoint /script-health-check is deprecated. "
                     "Please use /_stcore/script-health-check instead."
                 )
             else:
-                LOGGER.warning(
+                _LOGGER.warning(
                     "Endpoint /healtz is deprecated. Please use /_stcore/health instead."
                 )
 
@@ -199,7 +199,7 @@ ALLOWED_MESSAGE_ORIGINS = [
 class AllowedMessageOriginsHandler(_SpecialRequestHandler):
     def get(self, endpoint: str) -> None:
         if not endpoint.startswith("_stcore"):
-            LOGGER.warning(
+            _LOGGER.warning(
                 "Endpoint /st-allowed-message-origins is deprecated. "
                 "Please use /_stcore/allowed-message-origins instead."
             )
@@ -231,7 +231,7 @@ class MessageCacheHandler(tornado.web.RequestHandler):
 
     def get(self, subpath):
         if not subpath == "_stcore/":
-            LOGGER.warning(
+            _LOGGER.warning(
                 "Endpoint /message is deprecated. Please use /_stcore/message instead."
             )
 
