@@ -40,7 +40,7 @@ const SERVER_PING_PATH = "_stcore/health"
 /**
  * The path to fetch the whitelist for accepting cross-origin messages.
  */
-const ALLOWED_ORIGINS_PATH = "_stcore/st-allowed-message-origins"
+const ALLOWED_ORIGINS_PATH = "_stcore/allowed-message-origins"
 
 /**
  * The path of the server's websocket endpoint.
