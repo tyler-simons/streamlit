@@ -16,20 +16,17 @@
 
 describe("Interactive DataFrame canvas rendering", () => {
   before(() => {
-    cy.viewport(3000, 768)
+    cy.viewport(3000, 1200)
     // Increasing timeout since we're waiting for
     // dataframes and tables to be rendered.
     Cypress.config("defaultCommandTimeout", 30000);
 
-    cy.viewport(3000, 768)
     cy.loadApp("http://localhost:3000/");
-    cy.viewport(3000, 768)
     cy.prepForElementSnapshots();
-    cy.viewport(3000, 768)
   });
 
   it("shows widget correctly", () => {
-    cy.viewport(3000, 768)
+    cy.viewport(3000, 1200)
 
     cy.get(".stDataFrame").should("have.length", 28);
 
@@ -37,13 +34,8 @@ describe("Interactive DataFrame canvas rendering", () => {
     cannot run any tests based on the HTML DOM. Therefore, we only use snapshot
     matching to test that our table examples render correctly. In addition, glide-data-grid
     itself also has more advanced canvas based tests for some of the interactive features. */
-    cy.viewport(3000, 768)
-    cy.get("[data-testid=\"stDataFrameResizable\"]").each((el, idx) => {
-      cy.viewport(3000, 768)
-      return cy.wrap(el).matchImageSnapshot(`data-grid-canvas-${idx}-dark`, {
-        ...options,
-        force: false,
-      })
+    cy.get(".stDataFrame").each((el, idx) => {
+      return cy.wrap(el).matchThemedSnapshots("data-grid-canvas-" + idx);
     });
   });
 });
