@@ -50,6 +50,7 @@ import {
 } from "./styled-components"
 
 import "katex/dist/katex.min.css"
+import remarkColoredText from "./RemarkColoredText"
 
 enum Tags {
   H1 = "h1",
@@ -228,6 +229,54 @@ export interface RenderedMarkdownProps {
   isLabel?: boolean
 }
 
+type ColoredTextProps = JSX.IntrinsicElements["p"] & ReactMarkdownProps
+export const ColoredText: FunctionComponent<ColoredTextProps> = ({
+  node,
+  children,
+  ...rest
+}) => {
+  const sentenceWithColorRegex = new RegExp(
+    "\\[\\w+](([^[])*(\\w+)*([\\n\\r\\s]+\\w+)*)\\[\\/\\w+\\b]"
+  )
+  const colorStartRegex = new RegExp("\\[\\w+]")
+  let idx = 0
+  const components: Array<JSX.Element> = []
+  children.forEach(child => {
+    if (child && child.toString().length > 0) {
+      let text = child.toString()
+      let match = text.match(sentenceWithColorRegex)
+      if (!match) {
+        components.push(<span key={idx++}>{text}</span>)
+      }
+      while (match && match.index !== undefined) {
+        const prefix = text.substring(0, match.index)
+        if (prefix.length > 0) {
+          components.push(<span key={idx++}>{prefix}</span>)
+          text = text.substring(match.index)
+        }
+        match = text.match(sentenceWithColorRegex)
+        if (match) {
+          const colorMatch = match[0].match(colorStartRegex)
+          if (colorMatch) {
+            const color = colorMatch[0].replace("[", "").replace("]", "")
+            components.push(
+              <span key={idx++} style={{ color }}>
+                {match[1]}
+              </span>
+            )
+            text = text.substring(match[0].length)
+          }
+        }
+        match = text.match(sentenceWithColorRegex)
+        if (!match && text.length > 0) {
+          components.push(<span key={idx++}>{text}</span>)
+        }
+      }
+    }
+  })
+  return <p>{components.map(c => c)}</p>
+}
+
 export function RenderedMarkdown({
   allowHTML,
   source,
@@ -239,6 +288,7 @@ export function RenderedMarkdown({
     pre: CodeBlock,
     code: CodeTag,
     a: LinkWithTargetBlank,
+    p: ColoredText,
     h1: CustomHeading,
     h2: CustomHeading,
     h3: CustomHeading,
@@ -248,7 +298,7 @@ export function RenderedMarkdown({
     ...(overrideComponents || {}),
   }
 
-  const plugins = [remarkMathPlugin, remarkEmoji, remarkGfm]
+  const plugins = [remarkColoredText, remarkMathPlugin, remarkEmoji, remarkGfm]
   const rehypePlugins: PluggableList = [rehypeKatex]
 
   if (allowHTML) {
